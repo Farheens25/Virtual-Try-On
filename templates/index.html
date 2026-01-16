@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather Outfit Advisor</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
+<style>
+  body.sunny { background-color: #fde68a; }   /* sunny yellow */
+  body.rainy { background-color: #a5b4fc; }   /* rainy blue */
+  body.snow { background-color: #f0f9ff; }    /* snow white */
+  body.clouds { background-color: #cbd5e1; }  /* cloudy gray */
+  #card { transition: all 0.5s ease-in-out; }
+</style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center bg-blue-100">
+
+<h1 class="text-4xl font-bold mb-6">Weather Outfit Advisor</h1>
+
+<div class="flex mb-4">
+  <input id="cityInput" class="border p-2 rounded-l w-64" type="text" placeholder="Enter city">
+  <button onclick="getOutfit()" class="bg-blue-600 text-white px-4 rounded-r hover:bg-blue-700">Check Outfit</button>
+</div>
+
+<div id="card" class="hidden bg-white shadow-lg rounded p-6 w-80 text-center">
+  <h2 id="cityName" class="text-xl font-semibold"></h2>
+  <p id="temperature" class="my-1"></p>
+  <p id="weather" class="my-1"></p>
+  <p id="outfit" class="my-2 font-medium"></p>
+  <img id="outfitImage" class="mx-auto w-32 h-32 mt-2" src="" alt="Outfit">
+</div>
+
+<script>
+async function getOutfit() {
+  const city = document.getElementById("cityInput").value;
+  if (!city) { alert("Please enter a city"); return; }
+
+  const res = await fetch(`/outfit?city=${city}`);
+  const data = await res.json();
+
+  if(data.error){
+    alert(data.error);
+    return;
+  }
+
+  document.getElementById("card").classList.remove("hidden");
+  document.getElementById("cityName").innerText = data.city;
+  document.getElementById("temperature").innerText = `Temperature: ${data.temperature}°C`;
+  document.getElementById("weather").innerText = `Weather: ${data.weather}`;
+  document.getElementById("outfit").innerText = `Suggested Outfit: ${data.outfit}`;
+  document.getElementById("outfitImage").src = data.image;  // <-- Important fix
+
+  // Change body background based on weather
+  document.body.className = "";
+  const weather = data.weather.toLowerCase();
+  if(weather.includes("sun")) document.body.classList.add("sunny");
+  else if(weather.includes("rain")) document.body.classList.add("rainy");
+  else if(weather.includes("snow")) document.body.classList.add("snow");
+  else document.body.classList.add("clouds");
+}
+</script>
+
+</body>
+</html>
