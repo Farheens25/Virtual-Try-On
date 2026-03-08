@@ -57,7 +57,7 @@ while True:
         break
 
     img = cv2.flip(img, 1)
-    img = detector.findPose(img, draw=False)
+    img = detector.findPose(img, draw=True)
     lmList, bboxInfo = detector.findPosition(img, draw=False, bboxWithHands=False)
 
     if lmList:
@@ -92,16 +92,28 @@ while True:
         offsetx, offsety = properties["offsets"]
 
         # Resize shirt
-        widthofshirt = int((lm12[0] - lm11[0]) * fixedRatio)
+        import math
+        # Right shoulder (12) and Left shoulder (11) (cv2 flips the image so left and right are swapped visually)
+        # However, MediaPipe returns absolute coordinates after pose detection.
+        lm11_x, lm11_y = lm11[0], lm11[1]
+        lm12_x, lm12_y = lm12[0], lm12[1]
+        
+        shoulder_dist = math.hypot(lm12_x - lm11_x, lm12_y - lm11_y)
+        widthofshirt = int(shoulder_dist * fixedRatio)
+        if widthofshirt <= 0:
+            widthofshirt = 1
+            
         imgShirt = cv2.resize(imgShirt, (widthofshirt, int(widthofshirt * shirtRatioHeightWidth)))
 
-        currentScale = (lm12[0] - lm11[0]) / 190
+        currentScale = shoulder_dist / 190
         offset = int(offsetx * currentScale), int(offsety * currentScale)
 
         try:
-            img = cvzone.overlayPNG(img, imgShirt, (lm11[0] - offset[0], lm11[1] - offset[1]))
+            print(f"Overlaying {shirt_name}. lw={widthofshirt}, lm11=[{lm11_x}, {lm11_y}], lm12=[{lm12_x}, {lm12_y}], offset={offset}", flush=True)
+            # The offset is subtracted because lm11 is the left shoulder, and the shirt image needs to move left & up to center.
+            img = cvzone.overlayPNG(img, imgShirt, (lm11_x - offset[0], lm11_y - offset[1]))
         except Exception as e:
-            print(f"Error overlaying shirt: {e}")
+            print(f"Error overlaying shirt: {e}", flush=True)
             continue
 
         # Overlay navigation buttons
